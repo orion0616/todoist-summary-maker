@@ -20,17 +20,22 @@ def completedYesterday(item):
     completed_datetime += datetime.timedelta(hours=9)
     now = datetime.datetime.now()
     yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-    logger.debug('now:')
-    logger.debug(now)
-    logger.debug('completed:')
-    logger.debug(completed_datetime)
+    print(item['project_id'])
     if yesterday < completed_datetime and completed_datetime < now:
         return True
     else:
         return False
 
-def makeText(items):
-    texts = ['・' + item['content'] for item in items if item is not None]
+def makeText(projects, items):
+    texts = []
+    for item in items:
+        task = '・'
+        project = projects.get_by_id(item['project_id'])
+        if project is not None:
+            task += '(' + project['name'] + ') '
+        task += item['content']
+        print(task)
+        texts.append(task)
     today = datetime.datetime.now().strftime('%m/%d')
     if len(texts) == 0:
         return "No task completed on " + today + "\n"
@@ -58,7 +63,7 @@ def main():
     api.sync()
     items = ExList(api.completed.get_all()['items'])\
             .filter(completedYesterday)
-    message = makeText(items)
+    message = makeText(api.projects, items)
     sendSlackMessage(message)
 
 def exe(event, context):
