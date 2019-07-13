@@ -31,9 +31,10 @@ def completedYesterday(item):
 
 def makeText(items):
     texts = ['・' + item['content'] for item in items if item is not None]
+    today = datetime.datetime.now().strftime('%m/%d')
     if len(texts) == 0:
-        return "No task completed yesterday\n"
-    return 'You have completed these tasks yesteday!!\n' + '\n'.join(texts)
+        return "No task completed on " + today + "\n"
+    return 'On ' + today + ', you have completed these tasks!!\n' + '\n'.join(texts)
 
 def sendSlackMessage(message):
     webhookurl = os.getenv("SLACK_URL","")
