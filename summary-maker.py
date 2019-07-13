@@ -40,9 +40,9 @@ def sendSlackMessage(message):
     webhookurl = os.getenv("SLACK_URL","")
     try:
         requests.post(webhookurl, data = json.dumps({
-        'text': message, # 投稿するテキスト
-        'username': u'todoist-summary', # 投稿のユーザー名
-        'link_names': 1, # メンションを有効にする
+        'text': message,
+        'username': u'todoist-summary',
+        'link_names': 1,
         }))
     except requests.exceptions.MissingSchema:
         sys.exit(1)
