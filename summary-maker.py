@@ -44,11 +44,14 @@ def makeText(projects, items):
 def sendSlackMessage(message):
     webhookurl = os.getenv("SLACK_URL","")
     try:
-        requests.post(webhookurl, data = json.dumps({
+        logger.debug('sending message')
+        r = requests.post(webhookurl, data = json.dumps({
         'text': message,
         'username': u'todoist-summary',
         'link_names': 1,
         }))
+        logger.debug(r.status_code)
+
     except requests.exceptions.MissingSchema:
         sys.exit(1)
 
@@ -61,8 +64,10 @@ def main():
 
     api = todoist.TodoistAPI(key,'https://todoist.com',None,None)
     api.sync()
+    logger.debug('Filtering start')
     items = ExList(api.completed.get_all()['items'])\
             .filter(completedYesterday)
+    logger.debug('Filtering finished')
     message = makeText(api.projects, items)
     sendSlackMessage(message)
 
