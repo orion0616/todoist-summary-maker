@@ -14,6 +14,32 @@ def completed_yesterday(item):
     else:
         return False
 
+def get_minutes(title):
+    minutes = 0
+    splitted = title.split(" ")
+    for element in splitted:
+        if element[0] != "@":
+            continue
+        if "2時間" in element:
+            minutes += 120
+        if "1時間" in element:
+            minutes += 60
+        if "30分" in element:
+            minutes += 30
+        if "15分" in element:
+            minutes += 15
+    return minutes
+
+def summarize(items):
+    minutes =0
+    for item in items:
+        if not completed_yesterday(item):
+            continue
+        minutes += get_minutes(item['content'])
+    hours = minutes//60
+    minutes -= hours*60
+    return "Total time : " + str(hours) + " h " + str(minutes) + " m"
+
 def makeText(projects, items):
     texts = []
     for item in items:
@@ -28,7 +54,7 @@ def makeText(projects, items):
     today = datetime.datetime.now().strftime('%m/%d')
     if len(texts) == 0:
         return "No task completed on " + today + "\n"
-    return 'On ' + today + ', you have completed these tasks!!\n' + '\n'.join(texts)
+    return 'On ' + today + ', you have completed these tasks!!\n' + '\n'.join(texts) + "\n\n" + summarize(items)
 
 def sendSlackMessage(message):
     webhookurl = os.getenv("SLACK_URL","")
