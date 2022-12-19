@@ -1,26 +1,14 @@
 import os
 import sys
 import datetime
-import copy
 import requests
 import json
-from logging import getLogger, StreamHandler, DEBUG
-import todoist
-from exlist import ExList
 
-logger = getLogger(__name__)
-handler = StreamHandler()
-handler.setLevel(DEBUG)
-logger.setLevel(DEBUG)
-logger.addHandler(handler)
-logger.propagate = False
-
-def completedYesterday(item):
-    completed_datetime = datetime.datetime.strptime(item['completed_date'], '%Y-%m-%dT%H:%M:%SZ')
+def completed_yesterday(item):
+    completed_datetime = datetime.datetime.strptime(item['completed_at'], '%Y-%m-%dT%H:%M:%S.%fZ')
     completed_datetime += datetime.timedelta(hours=9)
     now = datetime.datetime.now()
     yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-    print(item['project_id'])
     if yesterday < completed_datetime and completed_datetime < now:
         return True
     else:
@@ -29,13 +17,14 @@ def completedYesterday(item):
 def makeText(projects, items):
     texts = []
     for item in items:
-        task = '・'
-        project = projects.get_by_id(item['project_id'])
-        if project is not None:
-            task += '(' + project['name'] + ') '
-        task += item['content']
-        print(task)
-        texts.append(task)
+        if not completed_yesterday(item):
+            continue
+        message = " - "
+        project_name = projects[item["project_id"]]["name"]
+        if project_name is not None:
+            message += '(' + project_name + ') '
+        message += item['content']
+        texts.append(message)
     today = datetime.datetime.now().strftime('%m/%d')
     if len(texts) == 0:
         return "No task completed on " + today + "\n"
@@ -44,31 +33,30 @@ def makeText(projects, items):
 def sendSlackMessage(message):
     webhookurl = os.getenv("SLACK_URL","")
     try:
-        logger.debug('sending message')
         r = requests.post(webhookurl, data = json.dumps({
         'text': message,
         'username': u'todoist-summary',
         'link_names': 1,
         }))
-        logger.debug(r.status_code)
 
     except requests.exceptions.MissingSchema:
         sys.exit(1)
 
 
 def main():
-    key = os.getenv("TODOIST_TOKEN")
-    if key is None:
+    token = os.getenv("TODOIST_TOKEN")
+    if token is None:
         print("Environment Variable named $TODOIST_TOKEN doesn't exist!")
         sys.exit()
 
-    api = todoist.TodoistAPI(key,'https://todoist.com',None,None)
-    api.sync()
-    logger.debug('Filtering start')
-    items = ExList(api.completed.get_all()['items'])\
-            .filter(completedYesterday)
-    logger.debug('Filtering finished')
-    message = makeText(api.projects, items)
+    url = "https://api.todoist.com/sync/v9/completed/get_all"
+    headers = { "Authorization" : "Bearer {}".format(token) }
+    data = {"limit" : 100}
+
+    res = requests.get(url, headers = headers, params = data).json()
+    items = res["items"]
+    projects = res["projects"]
+    message = makeText(projects, items)
     sendSlackMessage(message)
 
 def exe(event, context):

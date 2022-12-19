@@ -1,0 +1,10 @@
+[tool.poetry]
+name = "todoist-summary-maker"
+version = "0.2.0"
+description = "Todoist Summary Maker"
+authors = ["orion0616"]
+
+[tool.poetry.dependencies]
+python = "3.11.1"
+todoist-api-python = "^v2.0.0"
+requests = "2.28.1"
